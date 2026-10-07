@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Close, Delete, Plus } from "@element-plus/icons-vue";
 import { apiErrorMessage } from "@/api/client";
@@ -7,6 +8,7 @@ import EmptyState from "@/components/EmptyState.vue";
 import { useSpeciesStore } from "@/stores/species";
 import { CATEGORY_LABELS, type Phenophase, type Species, type SpeciesCategory } from "@/types/models";
 
+const router = useRouter();
 const speciesStore = useSpeciesStore();
 
 const tab = ref<"mine" | "preset">("mine");
@@ -133,8 +135,11 @@ async function save() {
   }
 }
 
-async function importPreset(species: Species) {
-  try {
+function openCard(species: Species) {
+  router.push({ name: "species-card", params: { id: species.id } });
+}
+
+async function importPreset(species: Species) {  try {
     await speciesStore.importPreset(species.id);
     ElMessage.success(`已将「${species.commonName}」加入我的物种`);
     tab.value = "mine";
@@ -230,6 +235,7 @@ onMounted(load);
         <footer class="species__actions">
           <template v-if="tab === 'mine'">
             <el-button size="small" @click="openEdit(species)">编辑 / 添加阶段</el-button>
+            <el-button size="small" type="primary" plain @click="openCard(species)">资料卡</el-button>
             <el-button size="small" type="danger" plain @click="archive(species)">归档</el-button>
             <span v-if="species._count" class="muted species__count">被 {{ species._count.observations }} 条观测引用</span>
           </template>

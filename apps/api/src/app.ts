@@ -16,6 +16,7 @@ import { exportRouter } from "./modules/export/router";
 import { observationRouter } from "./modules/observations/router";
 import { observationPhotoRouter, photoRouter } from "./modules/photos/router";
 import { shareRouter } from "./modules/share/router";
+import { speciesCardRouter, speciesCardShareRouter } from "./modules/species-card/router";
 import { shareLinkRouter, siteRouter } from "./modules/sites/router";
 import { phenophaseRouter, speciesRouter } from "./modules/species/router";
 import { statsRouter } from "./modules/stats/router";
@@ -87,6 +88,7 @@ export function createApp() {
   app.use("/api/v1/sites", siteRouter);
   app.use("/api/v1/share-links", shareLinkRouter);
   app.use("/api/v1/species", speciesRouter);
+  app.use("/api/v1/species", speciesCardRouter);
   app.use("/api/v1/phenophases", phenophaseRouter);
   app.use("/api/v1/tags", tagRouter);
 
@@ -97,6 +99,7 @@ export function createApp() {
   app.use("/api/v1/stats", statsRouter);
   app.use("/api/v1/export", exportRouter);
   app.use("/api/v1/share", shareRouter);
+  app.use("/api/v1/species-share", speciesCardShareRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

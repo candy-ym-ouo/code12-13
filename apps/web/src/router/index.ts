@@ -24,6 +24,12 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      path: "/species-share/:token",
+      name: "species-share",
+      component: () => import("@/views/SpeciesShareView.vue"),
+      meta: { public: true },
+    },
+    {
       path: "/",
       component: () => import("@/components/AppShell.vue"),
       children: [
@@ -33,6 +39,7 @@ const router = createRouter({
         { path: "observations/:id/edit", name: "observation-edit", component: () => import("@/views/ObservationEditView.vue") },
         { path: "sites", name: "sites", component: () => import("@/views/SitesView.vue") },
         { path: "species", name: "species", component: () => import("@/views/SpeciesView.vue") },
+        { path: "species/:id/card", name: "species-card", component: () => import("@/views/SpeciesCardView.vue") },
         { path: "compare", name: "compare", component: () => import("@/views/CompareView.vue") },
         { path: "stats", name: "stats", component: () => import("@/views/StatsView.vue") },
         { path: "settings", name: "settings", component: () => import("@/views/SettingsView.vue") },

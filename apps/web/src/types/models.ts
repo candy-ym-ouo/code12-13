@@ -160,12 +160,90 @@ export interface PhenologyResult {
 export interface ShareLink {
   id: string;
   token: string;
-  scope: "TIMELINE" | "TIMELINE_AND_COMPARE";
+  scope: "TIMELINE" | "TIMELINE_AND_COMPARE" | "SPECIES_CARD";
   url: string;
   expiresAt: string;
   revokedAt?: string | null;
   viewCount: number;
+  siteId?: string | null;
 }
+
+export interface SpeciesCardPhoto extends Photo {
+  observationId: string;
+  observationDate: string;
+  siteId: string;
+  siteName: string;
+  phenophaseId: string | null;
+  phenophaseName: string | null;
+  color: string | null;
+}
+
+export interface SpeciesCardPhenophase {
+  id: string;
+  name: string;
+  color: string;
+  orderIndex: number;
+  isDefault: boolean;
+  observationCount: number;
+  firstSeen: { date: string; dayOfYear: number } | null;
+  lastSeen: { date: string } | null;
+  years: number[];
+}
+
+export interface SpeciesCardFirstAppearance {
+  year: number;
+  firstDate: string;
+  dayOfYear: number;
+  phenophaseId: string | null;
+  phenophaseName: string | null;
+  color: string | null;
+  observationId: string | null;
+  photoCount: number;
+}
+
+export interface SpeciesCard {
+  kind: "SPECIES_CARD";
+  species: {
+    id: string;
+    category: SpeciesCategory;
+    commonName: string;
+    scientificName: string | null;
+    family: string | null;
+    description: string | null;
+  };
+  scope: { siteId: string | null; siteName: string | null };
+  phenophases: SpeciesCardPhenophase[];
+  firstAppearances: SpeciesCardFirstAppearance[];
+  years: Array<{ year: number; observationCount: number; photoCount: number }>;
+  photos: SpeciesCardPhoto[];
+  stats: {
+    observationCount: number;
+    photoCount: number;
+    siteCount: number;
+    yearCount: number;
+    firstObservationDate: string | null;
+    lastObservationDate: string | null;
+  };
+  revision: string;
+  generatedAt: string;
+}
+
+export interface SpeciesCardShareView {
+  card: SpeciesCard;
+  owner: { displayName: string };
+  share: {
+    scope: "SPECIES_CARD";
+    expiresAt: string;
+    viewCount: number;
+    unchanged?: boolean;
+  };
+}
+
+export type SpeciesCardShareInput = {
+  scope: "SPECIES_CARD";
+  siteId?: string | null;
+  expiresInDays: number;
+};
 
 export const KIND_LABELS: Record<ObservationKind, string> = {
   PLANT_PHENOLOGY: "树木发芽",

@@ -8,6 +8,9 @@ import type {
   ShareLink,
   Site,
   Species,
+  SpeciesCard,
+  SpeciesCardShareInput,
+  SpeciesCardShareView,
   Tag,
   User,
 } from "@/types/models";
@@ -109,6 +112,21 @@ export const speciesApi = {
   },
   async deletePhenophase(phenophaseId: string) {
     await http.delete(`/phenophases/${phenophaseId}`);
+  },
+  async card(speciesId: string, params: { siteId?: string } = {}) {
+    const { data } = await http.get<{ data: SpeciesCard }>(`/species/${speciesId}/card`, { params });
+    return data.data;
+  },
+  async createCardShare(speciesId: string, payload: SpeciesCardShareInput) {
+    const { data } = await http.post<{ data: ShareLink }>(`/species/${speciesId}/card/share`, payload);
+    return data.data;
+  },
+  async listCardShares(speciesId: string, params: { siteId?: string } = {}) {
+    const { data } = await http.get<{ data: ShareLink[] }>(`/species/${speciesId}/card/share-links`, { params });
+    return data.data;
+  },
+  async revokeCardShare(speciesId: string, linkId: string) {
+    await http.delete(`/species/${speciesId}/card/share-links/${linkId}`);
   },
 };
 
@@ -226,6 +244,12 @@ export const shareApi = {
       expiresAt: string;
       observations: Observation[];
     } }>(`/share/${token}`);
+    return data.data;
+  },
+  async viewSpeciesCard(token: string, revision?: string) {
+    const { data } = await http.get<{ data: SpeciesCardShareView }>(`/species-share/${token}`, {
+      params: { revision },
+    });
     return data.data;
   },
 };

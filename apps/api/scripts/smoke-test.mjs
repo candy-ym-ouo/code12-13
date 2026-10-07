@@ -178,6 +178,54 @@ async function main() {
   const afterRevoke = await fetch(`${API}/share/${share.body?.data?.token}`);
   check("撤销分享链接后失效", revoke.status === 200 && afterRevoke.status === 404, `status=${afterRevoke.status}`);
 
+  // 物种资料卡：聚合照片、物候阶段、历年首现日
+  const card = await call(`/species/${speciesId}/card`, { token });
+  check("资料卡聚合两年首现日", card.status === 200 &&
+    card.body?.data?.firstAppearances?.map((item) => item.firstDate).join(",") === "2024-03-18,2025-03-12",
+    `status=${card.status}`);
+  check("资料卡汇集上传的照片", card.body?.data?.photos?.length === 1 &&
+    card.body?.data?.phenophases?.some((phase) => phase.name === "发芽" && phase.observationCount === 2));
+  const revision = card.body?.data?.revision;
+  check("资料卡返回 revision 指纹", typeof revision === "string" && revision.length === 16);
+
+  // 限定单地点的只读链接
+  const cardShare = await call(`/species/${speciesId}/card/share`, {
+    method: "POST",
+    token,
+    body: { scope: "SPECIES_CARD", siteId, expiresInDays: 7 },
+  });
+  check("生成物种资料卡只读链接", cardShare.status === 201 &&
+    cardShare.body?.data?.url?.includes("/species-share/"), `status=${cardShare.status}`);
+
+  const cardAnon = await fetch(`${API}/species-share/${cardShare.body?.data?.token}`).then((r) => r.json());
+  check("匿名读取资料卡且不含观测 id / 原图地址",
+    cardAnon?.data?.card?.kind === "SPECIES_CARD" &&
+      cardAnon.data.card.scope.siteId === siteId &&
+      cardAnon.data.card.firstAppearances.every((item) => item.observationId === null) &&
+      cardAnon.data.card.photos.every((photo) => !("originalUrl" in photo)));
+
+  // 改期后旧链接口径同步：2025-03-12 → 2025-03-05，首现日应跟随变化
+  await call(`/observations/${second.body?.data?.id}`, {
+    method: "PATCH",
+    token,
+    body: { observationDate: "2025-03-05" },
+  });
+  const cardAfterChange = await fetch(
+    `${API}/species-share/${cardShare.body?.data?.token}?revision=${revision}`,
+  ).then((r) => r.json());
+  check("来源改期后只读链接口径同步",
+    cardAfterChange?.data?.card?.firstAppearances?.[1]?.firstDate === "2025-03-05" &&
+      cardAfterChange?.data?.share?.unchanged === false &&
+      cardAfterChange?.data?.card?.revision !== revision);
+
+  const cardRevoke = await call(
+    `/species/${speciesId}/card/share-links/${cardShare.body?.data?.id}`,
+    { method: "DELETE", token },
+  );
+  const cardAfterRevoke = await fetch(`${API}/species-share/${cardShare.body?.data?.token}`);
+  check("撤销资料卡链接后失效", cardRevoke.status === 200 && cardAfterRevoke.status === 404,
+    `status=${cardAfterRevoke.status}`);
+
   console.log(`\n通过 ${passed} 项，失败 ${failures.length} 项`);
   if (failures.length) {
     console.log("失败项：");
