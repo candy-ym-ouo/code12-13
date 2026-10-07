@@ -2,9 +2,11 @@
 import { computed, onMounted, ref } from "vue";
 import { useRoute } from "vue-router";
 import dayjs from "dayjs";
+import type { SharedView } from "@/api";
 import { shareApi } from "@/api";
 import { apiErrorMessage } from "@/api/client";
 import EmptyState from "@/components/EmptyState.vue";
+import SpeciesProfileCard from "@/components/SpeciesProfileCard.vue";
 import TimelineGroup from "@/components/TimelineGroup.vue";
 import { useUiStore } from "@/stores/ui";
 import type { Observation } from "@/types/models";
@@ -12,21 +14,16 @@ import type { Observation } from "@/types/models";
 const route = useRoute();
 const ui = useUiStore();
 
-const data = ref<{
-  site: { id: string; name: string; habitat: string | null; description: string | null };
-  owner: { displayName: string };
-  scope: string;
-  expiresAt: string;
-  observations: Observation[];
-} | null>(null);
+const data = ref<SharedView | null>(null);
 
 const loading = ref(true);
 const error = ref("");
 
 const groups = computed(() => {
-  if (!data.value) return [];
+  if (!data.value || data.value.kind !== "TIMELINE") return [];
+  const observations = data.value.observations;
   const byYear = new Map<string, Map<string, Observation[]>>();
-  for (const item of data.value.observations) {
+  for (const item of observations) {
     const year = item.observationDate.slice(0, 4);
     const month = item.observationDate.slice(0, 7);
     const months = byYear.get(year) ?? new Map<string, Observation[]>();
@@ -44,7 +41,7 @@ const groups = computed(() => {
 });
 
 const comparisons = computed(() => {
-  if (!data.value || data.value.scope !== "TIMELINE_AND_COMPARE") return [];
+  if (!data.value || data.value.kind !== "TIMELINE" || data.value.scope !== "TIMELINE_AND_COMPARE") return [];
   const keyed = new Map<string, { label: string; years: Map<number, string> }>();
   for (const item of data.value.observations) {
     if (!item.species || !item.phenophase) continue;
@@ -82,8 +79,23 @@ onMounted(async () => {
       :description="error"
     />
 
-    <template v-else-if="data">
-      <header class="share-header card">
+    <!-- 物种资料卡只读视图 -->
+    <template v-else-if="data && data.kind === 'SPECIES_PROFILE'">
+      <header class="card share-header">
+        <div class="row row--wrap">
+          <h1 class="share-header__title">{{ data.profile.species.commonName }} · 物种资料卡</h1>
+          <el-tag size="small" type="info">只读分享</el-tag>
+        </div>
+        <p class="muted share-header__meta">
+          限定地点：{{ data.site.name }} · 有效期至 {{ dayjs(data.expiresAt).format("YYYY-MM-DD") }}
+        </p>
+      </header>
+      <SpeciesProfileCard :profile="data.profile" read-only />
+    </template>
+
+    <!-- 地点时间线只读视图 -->
+    <template v-else-if="data && data.kind === 'TIMELINE'">
+      <header class="card share-header">
         <div class="row row--wrap">
           <h1 class="share-header__title">{{ data.site.name }}</h1>
           <el-tag size="small" type="info">只读分享</el-tag>
@@ -127,6 +139,7 @@ onMounted(async () => {
 <style scoped>
 .share-header {
   padding: 16px;
+  margin-bottom: 12px;
 }
 
 .share-header__title {

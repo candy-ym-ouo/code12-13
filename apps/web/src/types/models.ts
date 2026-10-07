@@ -160,11 +160,70 @@ export interface PhenologyResult {
 export interface ShareLink {
   id: string;
   token: string;
-  scope: "TIMELINE" | "TIMELINE_AND_COMPARE";
+  scope: "TIMELINE" | "TIMELINE_AND_COMPARE" | "SPECIES_PROFILE";
   url: string;
+  siteId?: string;
+  speciesId?: string | null;
   expiresAt: string;
   revokedAt?: string | null;
   viewCount: number;
+}
+
+export interface ProfilePhoto extends Photo {
+  observationId: string;
+  observationDate: string;
+}
+
+export interface ProfileOnsetItem {
+  year: number;
+  onsetDate: string | null;
+  dayOfYear: number | null;
+  offsetVsPrevYear?: number | null;
+  offsetVsBaseline?: number | null;
+  offsetText: string;
+  observationId: string | null;
+}
+
+export interface SpeciesProfile {
+  species: {
+    id: string;
+    commonName: string;
+    scientificName: string | null;
+    family: string | null;
+    category: SpeciesCategory;
+    description: string | null;
+  };
+  sites: Array<{ id: string; name: string }>;
+  phenophases: Array<{ id: string; name: string; color: string; orderIndex: number }>;
+  summary: {
+    observationCount: number;
+    photoCount: number;
+    siteCount: number;
+    yearCount: number;
+    years: number[];
+    firstObservationDate: string | null;
+    lastObservationDate: string | null;
+  };
+  overall: {
+    items: ProfileOnsetItem[];
+    baseline: { method: "median"; yearsUsed: number[]; dayOfYear: number } | null;
+    reason?: "INSUFFICIENT_HISTORY";
+  };
+  phases: Array<{
+    phenophase: { id: string | null; name: string; color: string };
+    observationCount: number;
+    items: ProfileOnsetItem[];
+    baseline: { method: "median"; yearsUsed: number[]; dayOfYear: number } | null;
+    reason?: "INSUFFICIENT_HISTORY";
+  }>;
+  photos: ProfilePhoto[];
+  recentObservations: Observation[];
+}
+
+export interface SpeciesShareLink extends ShareLink {
+  scope: "SPECIES_PROFILE";
+  siteId: string;
+  speciesId: string;
 }
 
 export const KIND_LABELS: Record<ObservationKind, string> = {

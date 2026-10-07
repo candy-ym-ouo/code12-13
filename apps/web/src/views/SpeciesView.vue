@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
+import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { Close, Delete, Plus } from "@element-plus/icons-vue";
 import { apiErrorMessage } from "@/api/client";
@@ -8,6 +9,7 @@ import { useSpeciesStore } from "@/stores/species";
 import { CATEGORY_LABELS, type Phenophase, type Species, type SpeciesCategory } from "@/types/models";
 
 const speciesStore = useSpeciesStore();
+const router = useRouter();
 
 const tab = ref<"mine" | "preset">("mine");
 const category = ref<SpeciesCategory | "">("");
@@ -48,6 +50,10 @@ async function load() {
   } catch (error) {
     ElMessage.error(apiErrorMessage(error));
   }
+}
+
+function openProfile(species: Species) {
+  router.push({ name: "species-profile", params: { id: species.id } });
 }
 
 function openCreate() {
@@ -229,6 +235,7 @@ onMounted(load);
 
         <footer class="species__actions">
           <template v-if="tab === 'mine'">
+            <el-button size="small" type="primary" plain @click="openProfile(species)">资料卡</el-button>
             <el-button size="small" @click="openEdit(species)">编辑 / 添加阶段</el-button>
             <el-button size="small" type="danger" plain @click="archive(species)">归档</el-button>
             <span v-if="species._count" class="muted species__count">被 {{ species._count.observations }} 条观测引用</span>

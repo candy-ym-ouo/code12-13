@@ -146,6 +146,55 @@ async function main() {
   check("物候统计返回序列", stats.status === 200 && stats.body?.data?.items?.length >= 2,
     `status=${stats.status}`);
 
+  // —— 物种资料卡：照片 / 阶段 / 历年首现日聚合 ——
+  const profile = await call(`/profiles/species/${speciesId}`, { token });
+  const onset2025 = profile.body?.data?.overall?.items?.find((item) => item.year === 2025);
+  check(
+    "物种资料卡汇总照片与历年首现日",
+    profile.status === 200 &&
+      profile.body?.data?.summary?.photoCount >= 1 &&
+      onset2025?.onsetDate === "2025-03-12",
+    `status=${profile.status}, onset=${onset2025?.onsetDate}`,
+  );
+
+  // —— 只读资料卡分享：范围限定到该物种 × 该地点 ——
+  const profileShare = await call(`/profiles/species/${speciesId}/share`, {
+    method: "POST",
+    token,
+    body: { siteId, expiresInDays: 7 },
+  });
+  check("生成只读资料卡链接", profileShare.status === 201
+    && profileShare.body?.data?.scope === "SPECIES_PROFILE"
+    && Boolean(profileShare.body?.data?.token), `status=${profileShare.status}`);
+
+  const profileAnon = await fetch(`${API}/share/${profileShare.body?.data?.token}`);
+  const profileAnonBody = await profileAnon.json();
+  check(
+    "匿名只读资料卡仅含所选地点",
+    profileAnon.status === 200 &&
+      profileAnonBody?.data?.kind === "SPECIES_PROFILE" &&
+      profileAnonBody?.data?.profile?.summary?.siteCount === 1,
+    `status=${profileAnon.status}`,
+  );
+
+  // 改期来源记录后，匿名再看口径已同步（2025 首现日跟随移动）
+  await call(`/observations/${second.body?.data?.id}`, {
+    method: "PATCH",
+    token,
+    body: { observationDate: "2025-03-20" },
+  });
+  const profileAfter = await fetch(`${API}/share/${profileShare.body?.data?.token}`);
+  const profileAfterBody = await profileAfter.json();
+  const onsetAfter = profileAfterBody?.data?.profile?.overall?.items?.find((item) => item.year === 2025);
+  check("来源改期后只读资料卡口径同步", onsetAfter?.onsetDate === "2025-03-20",
+    `onset=${onsetAfter?.onsetDate}`);
+  // 还原日期，避免影响后续 CSV 断言
+  await call(`/observations/${second.body?.data?.id}`, {
+    method: "PATCH",
+    token,
+    body: { observationDate: "2025-03-12" },
+  });
+
   // 用 arrayBuffer 读取，避免 fetch 的 text() 解码时吞掉 BOM
   const csvResponse = await fetch(`${API}/export/observations?format=csv`, {
     headers: { Authorization: `Bearer ${token}` },

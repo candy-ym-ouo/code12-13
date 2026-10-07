@@ -79,6 +79,7 @@ model Species {
   owner        User?         @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   phenophases  Phenophase[]
   observations Observation[]
+  shareLinks   ShareLink[]
 
   @@index([ownerId, category, commonName])
   @@index([category, commonName])
@@ -186,6 +187,7 @@ model ShareLink {
   id        String    @id @default(cuid())
   token     String    @unique
   siteId    String
+  speciesId String?
   ownerId   String
   scope     String    @default("TIMELINE")
   expiresAt DateTime
@@ -193,8 +195,10 @@ model ShareLink {
   viewCount Int       @default(0)
   createdAt DateTime  @default(now())
 
-  site  Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
-  owner User @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  site    Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  species Species? @relation(fields: [speciesId], references: [id], onDelete: Cascade)
+  owner   User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
 
   @@index([siteId, revokedAt])
+  @@index([speciesId, revokedAt])
 }

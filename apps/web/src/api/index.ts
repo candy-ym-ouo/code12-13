@@ -8,6 +8,8 @@ import type {
   ShareLink,
   Site,
   Species,
+  SpeciesProfile,
+  SpeciesShareLink,
   Tag,
   User,
 } from "@/types/models";
@@ -217,15 +219,42 @@ export const statsApi = {
   },
 };
 
+export const profileApi = {
+  async species(speciesId: string, params: { siteId?: string } = {}) {
+    const { data } = await http.get<{ data: SpeciesProfile }>(`/profiles/species/${speciesId}`, { params });
+    return data.data;
+  },
+  async createSpeciesShare(speciesId: string, payload: { siteId: string; expiresInDays: number }) {
+    const { data } = await http.post<{ data: SpeciesShareLink }>(
+      `/profiles/species/${speciesId}/share`,
+      payload,
+    );
+    return data.data;
+  },
+};
+
+export type SharedTimelineView = {
+  kind: "TIMELINE";
+  site: Site;
+  owner: { displayName: string };
+  scope: string;
+  expiresAt: string;
+  observations: Observation[];
+};
+
+export type SharedSpeciesProfileView = {
+  kind: "SPECIES_PROFILE";
+  scope: "SPECIES_PROFILE";
+  expiresAt: string;
+  site: { id: string; name: string };
+  profile: SpeciesProfile;
+};
+
+export type SharedView = SharedTimelineView | SharedSpeciesProfileView;
+
 export const shareApi = {
-  async view(token: string) {
-    const { data } = await http.get<{ data: {
-      site: Site;
-      owner: { displayName: string };
-      scope: string;
-      expiresAt: string;
-      observations: Observation[];
-    } }>(`/share/${token}`);
+  async view(token: string): Promise<SharedView> {
+    const { data } = await http.get<{ data: SharedView }>(`/share/${token}`);
     return data.data;
   },
 };
